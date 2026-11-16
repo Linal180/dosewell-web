@@ -8,11 +8,11 @@ export default async function DashboardPage() {
   const { user } = await api<{ user: User }>("/api/v1/auth/me");
 
   if (user.role === "patient") {
+    const today = todayIn(user.timezone);
     const [{ doses }, { adherence }] = await Promise.all([
-      api<{ doses: Dose[] }>("/api/v1/doses"),
+      api<{ doses: Dose[] }>(`/api/v1/doses?from=${today}&to=${today}&per=100`),
       api<{ adherence: Adherence }>("/api/v1/adherence"),
     ]);
-    const today = todayIn(user.timezone);
     const dueToday = doses.filter((dose) => dose.local_date === today);
 
     return (

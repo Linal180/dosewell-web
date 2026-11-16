@@ -1,7 +1,12 @@
 import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Request body must be JSON" }, { status: 400 });
+  }
   const upstream = await fetch(`${process.env.API_URL}/api/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

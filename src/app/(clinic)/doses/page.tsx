@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { DoseList } from "@/components/DoseList";
 import { api } from "@/lib/api";
-import type { Dose, User } from "@/lib/types";
+import { shiftISODate, todayIn, type Dose, type User } from "@/lib/types";
 
 export const metadata = { title: "Schedule" };
 
-export default async function DosesPage({ searchParams }: { searchParams: Promise<{ patient?: string }> }) {
-  const { patient: patientId } = await searchParams;
+export default async function DosesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ patient?: string; from?: string; to?: string }>;
+}) {
+  const { patient: patientId, from: fromParam, to: toParam } = await searchParams;
   const { user } = await api<{ user: User }>("/api/v1/auth/me");
 
   if (user.role !== "patient" && !patientId) {
@@ -31,8 +35,13 @@ export default async function DosesPage({ searchParams }: { searchParams: Promis
     );
   }
 
-  const path = user.role === "patient" ? "/api/v1/doses" : `/api/v1/doses?patient_id=${patientId}`;
-  const { doses } = await api<{ doses: Dose[] }>(path);
+  const zone = user.role === "patient" ? user.timezone : (await api<{ patient: User }>(`/api/v1/patients/${patientId}`)).patient.timezone;
+  const today = todayIn(zone);
+  const from = fromParam || shiftISODate(today, -7);
+  const to = toParam || shiftISODate(today, 14);
+  const patientQuery = user.role === "patient" ? "" : `&patient_id=${patientId}`;
+  const { doses } = await api<{ doses: Dose[] }>(`/api/v1/doses?from=${from}&to=${to}&per=100${patientQuery}`);
+  const query = user.role === "patient" ? "" : `patient=${patientId}&`;
 
   return (
     <>
@@ -40,6 +49,13 @@ export default async function DosesPage({ searchParams }: { searchParams: Promis
         <p className="eyebrow">Schedule</p>
         <h1>Doses in local time</h1>
       </header>
+      <p className="window">
+        <Link href={`/doses?${query}from=${shiftISODate(from, -21)}&to=${shiftISODate(from, -1)}`}>Earlier</Link>
+        <span>
+          {from} to {to}
+        </span>
+        <Link href={`/doses?${query}from=${shiftISODate(to, 1)}&to=${shiftISODate(to, 21)}`}>Later</Link>
+      </p>
       <DoseList doses={doses} canRecord={user.role === "patient"} />
     </>
   );

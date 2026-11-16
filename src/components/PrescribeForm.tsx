@@ -53,6 +53,20 @@ export default function PrescribeForm({
   const [duration, setDuration] = useState("7");
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
+  const [failureFor, setFailureFor] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const signature = [
+    patient?.id,
+    medicationId,
+    frequency,
+    times.join("|"),
+    intervalHours,
+    startDate,
+    duration,
+    timezone,
+    quantity,
+    unit,
+  ].join("~");
 
   const zones = useMemo(() => {
     const extra = patient && !TIMEZONES.includes(patient.timezone) ? [patient.timezone] : [];
@@ -67,12 +81,19 @@ export default function PrescribeForm({
     clientApi<{ medications: Medication[] }>(path, { signal: controller.signal })
       .then((result) => {
         if (!active) return;
-        if (result.ok) setMedications(result.data.medications);
+        if (result.ok) {
+          setMedications(result.data.medications);
+          setSearchError(null);
+        } else {
+          setMedications([]);
+          setSearchError("Could not load medications");
+        }
         setLoadedQuery(term);
       })
       .catch((error: Error) => {
         if (!active || error.name === "AbortError") return;
         setMedications([]);
+        setSearchError("Could not load medications");
         setLoadedQuery(term);
       });
     return () => {
@@ -119,6 +140,7 @@ export default function PrescribeForm({
     setPending(false);
     if (!result.ok) {
       setFailure(result.data);
+      setFailureFor(signature);
       return;
     }
     router.push(`/patients/${patient.id}`);
@@ -127,7 +149,8 @@ export default function PrescribeForm({
 
   if (!patient) return <p className="empty">No patients are on the list.</p>;
 
-  const detailLines = Object.entries(failure?.details ?? {}).flatMap(([field, messages]) =>
+  const shown = failureFor === signature ? failure : null;
+  const detailLines = Object.entries(shown?.details ?? {}).flatMap(([field, messages]) =>
     messages.map((message) => `${field.replaceAll("_", " ")} ${message}`),
   );
 
@@ -159,6 +182,7 @@ export default function PrescribeForm({
           autoComplete="off"
         />
       </label>
+      {searchError && <p className="error">{searchError}</p>}
       {loadedQuery !== debouncedQuery.trim() ? (
         <div className="skeleton short" aria-hidden="true" />
       ) : (
@@ -252,14 +276,14 @@ export default function PrescribeForm({
         </select>
       </label>
 
-      {failure && (
-        <div className={failure.code === "acknowledgement_required" ? "notice warn" : "notice danger"} role="alert">
-          <strong>{failure.error}</strong>
-          {[...(failure.blocked ?? []), ...(failure.code === "blocked" ? failure.warnings ?? [] : [])].map((item) => (
-            <p key={item.message}>{item.message}</p>
+      {shown && (
+        <div className={shown.code === "acknowledgement_required" ? "notice warn" : "notice danger"} role="alert">
+          <strong>{shown.error}</strong>
+          {[...(shown.blocked ?? []), ...(shown.code === "blocked" ? shown.warnings ?? [] : [])].map((item) => (
+            <p key={`${item.type}-${item.message}`}>{item.message}</p>
           ))}
-          {failure.code === "acknowledgement_required" &&
-            failure.warnings?.map((item) => <p key={item.message}>{item.message}</p>)}
+          {shown.code === "acknowledgement_required" &&
+            shown.warnings?.map((item) => <p key={`${item.type}-${item.message}`}>{item.message}</p>)}
           {detailLines.map((line) => (
             <p key={line}>{line}</p>
           ))}
@@ -270,7 +294,7 @@ export default function PrescribeForm({
         <button type="submit" disabled={pending || !medicationId}>
           {pending ? "Checking…" : "Prescribe"}
         </button>
-        {failure?.code === "acknowledgement_required" && (
+        {shown?.code === "acknowledgement_required" && (
           <button type="button" className="ghost" disabled={pending} onClick={() => submit(true)}>
             {pending ? "Saving…" : "Acknowledge and prescribe"}
           </button>

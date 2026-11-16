@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdherenceFigure } from "@/components/AdherenceFigure";
+import { CancelCourse } from "@/components/CancelCourse";
 import { api } from "@/lib/api";
 import type { Adherence, PatientDetail, User } from "@/lib/types";
 
@@ -50,7 +51,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   <p className="muted">
                     {prescription.dose_quantity} {prescription.dose_unit}, {prescription.frequency.replaceAll("_", " ")},{" "}
                     {prescription.duration_days} days from {prescription.start_date}
+                    {prescription.status === "cancelled" ? ", cancelled" : ""}
                   </p>
+                  {user.role === "doctor" && prescription.status === "active" && <CancelCourse id={prescription.id} />}
                 </li>
               ))}
             </ul>

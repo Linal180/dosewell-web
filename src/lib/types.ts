@@ -66,6 +66,16 @@ export type Prescription = {
   doses?: Dose[];
 };
 
+export type CourseAdherence = {
+  prescription_id: number;
+  medication: string;
+  total: number;
+  taken: number;
+  missed: number;
+  scheduled: number;
+  percentage: number | null;
+};
+
 export type Adherence = {
   patient_id: number;
   total: number;
@@ -73,7 +83,10 @@ export type Adherence = {
   missed: number;
   scheduled: number;
   percentage: number | null;
+  courses?: CourseAdherence[];
 };
+
+export type Pagination = { page: number; per: number; total: number };
 
 export type AuditEntry = {
   id: number;
@@ -110,6 +123,11 @@ export const FREQUENCIES = [
 
 export function todayIn(timeZone: string) {
   return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
+}
+
+export function shiftISODate(iso: string, days: number) {
+  const [year, month, day] = iso.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
 }
 
 export function utcClock(iso: string) {

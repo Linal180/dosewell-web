@@ -9,7 +9,7 @@ The API is a separate repo, `dosewell-api`. Clone the two repos side by side.
 From `dosewell-api`:
 
 ```bash
-docker compose up --build
+./bin/compose up --build
 ```
 
 Open http://localhost:3001. The API is http://localhost:3000.

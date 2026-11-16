@@ -15,6 +15,16 @@ export function AdherenceFigure({ adherence }: { adherence: Adherence }) {
         <li><strong>{adherence.missed}</strong> missed</li>
         <li><strong>{adherence.scheduled}</strong> still open</li>
       </ul>
+      {adherence.courses && adherence.courses.length > 1 && (
+        <ul className="plain">
+          {adherence.courses.map((course) => (
+            <li key={course.prescription_id}>
+              <strong>{course.medication}</strong>
+              <span className="muted">{course.percentage == null ? "No doses due" : `${course.percentage}%`}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
