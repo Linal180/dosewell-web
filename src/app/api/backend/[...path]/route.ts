@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { apiOrigin } from "@/lib/api";
+import { apiOrigin, readUpstream, wakingMessage } from "@/lib/api";
 
 async function forward(request: Request, path: string[]) {
   const token = (await cookies()).get("dosewell_token")?.value;
@@ -10,16 +10,24 @@ async function forward(request: Request, path: string[]) {
     headers.set("Content-Type", "application/json");
   }
 
-  const upstream = await fetch(`${apiOrigin()}/api/v1/${path.join("/")}${url.search}`, {
-    method: request.method,
-    headers,
-    body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
-    cache: "no-store",
-  });
-  const text = await upstream.text();
-  return new Response(text, {
+  const upstream = await readUpstream(
+    `${apiOrigin()}/api/v1/${path.join("/")}${url.search}`,
+    {
+      method: request.method,
+      headers,
+      body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
+    },
+    4,
+  );
+  if (!upstream.text) {
+    return Response.json(
+      { error: upstream.data.error || wakingMessage },
+      { status: upstream.status >= 400 ? upstream.status : 503 },
+    );
+  }
+  return new Response(upstream.text, {
     status: upstream.status,
-    headers: { "Content-Type": upstream.headers.get("Content-Type") || "application/json" },
+    headers: { "Content-Type": "application/json" },
   });
 }
 
