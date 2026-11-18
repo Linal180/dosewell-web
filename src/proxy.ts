@@ -1,16 +1,28 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { publicOrigin } from "@/lib/public-origin";
+
+const knownPaths = [
+  /^\/$/,
+  /^\/login$/,
+  /^\/patients$/,
+  /^\/patients\/[^/]+$/,
+  /^\/prescribe$/,
+  /^\/audit$/,
+  /^\/doses$/,
+  /^\/adherence$/,
+];
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get("dosewell_token")?.value;
-  const loggingIn = request.nextUrl.pathname === "/login";
+  const path = request.nextUrl.pathname.replace(/\/$/, "") || "/";
+  if (!knownPaths.some((pattern) => pattern.test(path))) return NextResponse.next();
 
-  if (!token && !loggingIn) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-  if (token && loggingIn) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
+  const token = request.cookies.get("dosewell_token")?.value;
+  const loggingIn = path === "/login";
+  const origin = publicOrigin(request);
+
+  if (!token && !loggingIn) return NextResponse.redirect(new URL("/login", origin));
+  if (token && loggingIn) return NextResponse.redirect(new URL("/", origin));
   return NextResponse.next();
 }
 

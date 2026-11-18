@@ -180,6 +180,15 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .notice.danger { background: #fdecef; }
 .error { color: var(--rose); margin: 0; }
 .empty { color: var(--muted); }
+.miss {
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 0.4rem;
+  max-width: 36rem;
+  padding: 2rem clamp(1rem, 5vw, 5rem);
+}
 .login {
   min-height: 100vh;
   display: grid;
