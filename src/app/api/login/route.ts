@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { apiOrigin } from "@/lib/api";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Request body must be JSON" }, { status: 400 });
   }
-  const upstream = await fetch(`${process.env.API_URL}/api/v1/auth/login`, {
+  const upstream = await fetch(`${apiOrigin()}/api/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { apiOrigin } from "@/lib/api";
 
 async function forward(request: Request, path: string[]) {
   const token = (await cookies()).get("dosewell_token")?.value;
@@ -9,7 +10,7 @@ async function forward(request: Request, path: string[]) {
     headers.set("Content-Type", "application/json");
   }
 
-  const upstream = await fetch(`${process.env.API_URL}/api/v1/${path.join("/")}${url.search}`, {
+  const upstream = await fetch(`${apiOrigin()}/api/v1/${path.join("/")}${url.search}`, {
     method: request.method,
     headers,
     body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
